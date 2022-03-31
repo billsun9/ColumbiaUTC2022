@@ -14,7 +14,7 @@ analyst2 = pd.read_csv("Predicted Testing Data Analyst 2.csv")
 analyst3 = pd.read_csv("Predicted Testing Data Analyst 3.csv")
 shares = pd.read_csv("Shares Outstanding.csv")
 shares = shares.iloc[:, 1:]
-print(analyst1.head())
+
 #Figure out how to do test train splits w/o scipy
 
 def calc_implied_expected_returns(lamb, var_covar_matrix, w_mkt):
@@ -42,51 +42,83 @@ def calc_analyst_covar(data):
   returns = returns.iloc[1:, 1:]
   return returns.cov()
 
-print(calc_analyst_covar(analyst1))
-
 def calc_sigma():
   return 0
 
 def black_litterman(var_covar_matrix, analyst_covar_matrix, implied_expected_returns, expected_return_predictions):
   return np.matmul(np.linalg.pinv(np.linalg.pinv(var_covar_matrix) + np.linalg.pinv(analyst_covar_matrix)), np.matmul(np.linalg.pinv(var_covar_matrix), implied_expected_returns) + np.matmul(np.linalg.inv(var_covar_matrix), expected_return_predictions))
 
+
+# def sharpe(lamb, test_data, analyst1, analyst2, analyst3, t_i):
+#   w_mkt = calc_w_mkt_matrix(test_data.iloc[t_i])
+#   var_covar_matrix = calc_var_covar_matrix(test_data)
+#   implied_expected_returns = calc_implicit_expected_returns(lamb, var_covar_matrix, w_mkt)
+#   expected_returns = black_litterman(var_covar_matrix, implied_expected_returns, expected_return_predictions)
+#   lil_sigma = 1
+
+#   return -1 * expected_returns / lil_sigma #-1 because we want to maximize
+
+
+# The actual function that they will be running. 
+
+#allocate_portfolio() is going to be run 2520 times, one time for each of the 2520 timesteps
+#Each timestep, we will be given the analyst predictions for 21 days ahead of the beginning of the current month (??), which takes the form of a 9-element array (1 element per stock)
+
+#creating the empty training dataframes
+test_data_train = pd.DataFrame(columns=["A", "B", "C", "D", "E", "F", "G", "H", "I"])
+analyst1_train = pd.DataFrame(columns=["A", "B", "C", "D", "E", "F", "G", "H", "I"])
+analyst2_train = pd.DataFrame(columns=["A", "B", "C", "D", "E", "F", "G", "H", "I"])
+analyst3_train = pd.DataFrame(columns=["A", "B", "C", "D", "E", "F", "G", "H", "I"])
+w = np.array([1/9]*9) #initialize as an even distribution of our portfolio
+
 def allocate_portfolio(asset_prices, asset_price_predictions_1, asset_price_predictions_2, asset_price_predictions_3):
-    
+    #As per Piazza instructions, appending the new data into the existing dataframes
+    test_data_train.loc[len(test_data)] = asset_prices
+    analyst1_train.loc[len(analyst1)] = asset_price_predictions_1
+    analyst2_train.loc[len(analyst2)] = asset_price_predictions_2
+    analyst3_train.loc[len(analyst3)] = asset_price_predictions_3
+
+    lamb_0 = 1
+    market_caps = np.multiply(asset_prices, shares)
+    total_market_cap = np.sum(market_caps)
+    w_mkt = np.dot(market_caps, w) #for stocks A through I
+    # # w_mkt = allocate_portfolio(test_data, analyst1, analyst2, analyst3)
+    # var_covar_matrix = calc_var_covar_matrix(test_data)
+    # implied_expected_returns = calc_implicit_expected_returns(lamb_0, var_covar_matrix, w_mkt)
+    # expected_returns = black_litterman(var_covar_matrix, implied_expected_returns, expected_return_predictions)
+    # lil_sigma = 1
+
+
+    #We want to maximize sharpe wrt lambda and weights
+
+
+
+    # res = scipy.optimize.minimize(sharpe, lamb_0, method='nelder-mead', options={'xatol': 1e-8, 'disp': True})
     # This simple strategy equally weights all assets every period
     # (called a 1/n strategy).
     
     n_assets = len(asset_prices)
     weights = np.repeat(1 / n_assets, n_assets)
-    return weights
 
-def sharpe(lamb, test_data, analyst1, analyst2, analyst3, t_i):
-  w_mkt = calc_w_mkt_matrix(test_data.iloc[t_i])
-  var_covar_matrix = calc_var_covar_matrix(test_data)
-  implied_expected_returns = calc_implicit_expected_returns(lamb, var_covar_matrix, w_mkt)
-  expected_returns = black_litterman(var_covar_matrix, implied_expected_returns, expected_return_predictions)
-  lil_sigma = 1
-
-  return -1 * expected_returns / lil_sigma #-1 because we want to maximize
+    #L1 normalize the weights before returning
+    normalized_weights = weights/np.linalg.norm(weights, ord=1)
+    return normalized_weights
 
 
+#Testing the runtime of the allocate_portfolio
+returns = np.zeros(2520)
+print(test_data.shape)
+for i in range(1, 2508):
+  #index from column 1 bc don't want row indices
+  weights = allocate_portfolio(test_data.iloc[i], analyst1.iloc[i, 1:], analyst2.iloc[i, 1:], analyst3.iloc[i, 1:])
+  # print(test_data.iloc[i]-test_data.iloc[i-1])
+  # print((test_data[i]-test_data[i-1]) * weights)
 
-# #Running the code
-# #initialization
-# lamb_0 = 1
-# w_mkt = np.array(9) #for stocks A through I
-# # w_mkt = allocate_portfolio(test_data, analyst1, analyst2, analyst3)
-# var_covar_matrix = calc_var_covar_matrix(test_data)
-# implied_expected_returns = calc_implicit_expected_returns(lamb_0, var_covar_matrix, w_mkt)
-# expected_returns = black_litterman(var_covar_matrix, implied_expected_returns, expected_return_predictions)
-# lil_sigma = 1
+  returns[i] = np.sum((test_data.iloc[i]-test_data.iloc[i-1]) * weights) #returns = sum((price_i - price_{i-1}) * weight stock k * number of shares of stock k)
+  print(weights)
 
-
-# #We want to maximize sharpe wrt lambda and weights
-
-
-
-# res = scipy.optimize.minimize(sharpe, lamb_0, method='nelder-mead', options={'xatol': 1e-8, 'disp': True})
-# print(res.x) #printing the parameters that maximize Sharpe ratio
-# print(res)
-
-# print(test_data.head())
+expected_returns = np.average(returns)
+variance_returns = np.var(returns)
+sharpe = expected_returns / variance_returns
+print("sharpe: ")
+print(sharpe)
