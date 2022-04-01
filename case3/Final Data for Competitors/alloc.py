@@ -18,9 +18,14 @@ shares = shares.iloc[:, 1:]
 #Figure out how to do test train splits w/o scipy
 
 def calc_implied_expected_returns(lamb, var_covar_matrix, w_mkt):
-  # if var_covar_matrix.shape[1] != w_mkt.shape[0]:
-  #   return "error"
-  return lamb * np.matmul(var_covar_matrix, w_mkt)
+  if w_mkt.ndim == 1:
+    w_mkt = w_mkt[ : , np.newaxis]
+  if var_covar_matrix.ndim == 1:
+    var_covar_matrix = var_covar_matrix[ : , np.newaxis]
+  print(var_covar_matrix)
+  print(w_mkt)
+  print(np.matmul(var_covar_matrix, w_mkt.T))
+  return lamb * np.matmul(var_covar_matrix, w_mkt.T)
 
 def calc_var_covar_matrix(data):
   #calculating returns
@@ -42,11 +47,19 @@ def calc_analyst_covar(data):
   returns = returns.iloc[1:, 1:]
   return returns.cov()
 
-def calc_sigma():
-  return 0
+def calc_sigma(weights, var_covar_mat):
+  #Note that this is the standard deviation, and can be calculated by w_portfolio Sigma w_portfolio.T
+  #Where Sigma is the var/covar matrix
+  if weights.ndim == 1:
+    weights = weights[ : , np.newaxis]
+  return (weights @ var_covar_mat) @ weights.T
 
-def black_litterman(var_covar_matrix, analyst_covar_matrix, implied_expected_returns, expected_return_predictions):
-  return np.matmul(np.linalg.pinv(np.linalg.pinv(var_covar_matrix) + np.linalg.pinv(analyst_covar_matrix)), np.matmul(np.linalg.pinv(var_covar_matrix), implied_expected_returns) + np.matmul(np.linalg.inv(var_covar_matrix), expected_return_predictions))
+def black_litterman(covar_matrix, analyst_covar_matrix, implied_expected_returns, analyst_return_predictions):
+  print(covar_matrix.shape)
+  print(analyst_covar_matrix.shape)
+  print(implied_expected_returns.shape)
+  print(analyst_return_predictions.shape)
+  return np.matmul(np.linalg.inv(np.linalg.inv(covar_matrix) + np.linalg.inv(analyst_covar_matrix)), np.matmul(np.linalg.inv(covar_matrix), implied_expected_returns) + np.matmul(np.linalg.inv(covar_matrix), analyst_return_predictions))
 
 
 # def sharpe(lamb, test_data, analyst1, analyst2, analyst3, t_i):
@@ -73,36 +86,57 @@ w = np.array([1/9]*9) #initialize as an even distribution of our portfolio
 
 def allocate_portfolio(asset_prices, asset_price_predictions_1, asset_price_predictions_2, asset_price_predictions_3):
     #As per Piazza instructions, appending the new data into the existing dataframes
-    test_data_train.loc[len(test_data)] = asset_prices
-    analyst1_train.loc[len(analyst1)] = asset_price_predictions_1
-    analyst2_train.loc[len(analyst2)] = asset_price_predictions_2
-    analyst3_train.loc[len(analyst3)] = asset_price_predictions_3
+    # test_data_train.loc[len(test_data)] = asset_prices
+    # analyst1_train.loc[len(analyst1)] = asset_price_predictions_1
+    # analyst2_train.loc[len(analyst2)] = asset_price_predictions_2
+    # analyst3_train.loc[len(analyst3)] = asset_price_predictions_3
 
-    lamb_0 = 1
-    market_caps = np.multiply(asset_prices, shares)
-    total_market_cap = np.sum(market_caps)
-    w_mkt = np.dot(market_caps, w) #for stocks A through I
-    # # w_mkt = allocate_portfolio(test_data, analyst1, analyst2, analyst3)
-    # var_covar_matrix = calc_var_covar_matrix(test_data)
-    # implied_expected_returns = calc_implicit_expected_returns(lamb_0, var_covar_matrix, w_mkt)
-    # expected_returns = black_litterman(var_covar_matrix, implied_expected_returns, expected_return_predictions)
-    # lil_sigma = 1
+    # lamb_0 = 1
+    # market_caps = np.multiply(asset_prices, shares)
+    # total_market_cap_in_portfolio = np.sum(market_caps)
+    # w_mkt = np.multiply(market_caps, w) #for stocks A through I
+
+    # analyst_return_predictions = asset_price_predictions_1 - analyst1_train.iloc[-1]
+    # analyst_return_predictions = analyst_return_predictions[ :, np.newaxis]
+    # analyst_covar_matrix  = np.var(analyst_return_predictions)
+    # returns = asset_prices-test_data_train.iloc[-1]
+    
+    # print(returns)
+    # returns = returns[ : , np.newaxis]
+    # covar_matrix = np.cov(returns)
+    # print(len(test_data_train))
+    # if len(test_data_train) == 1:
+    #   covar_matrix = calc_var_covar_matrix(test_data)
+    #   print("first case!")
+    # print(covar_matrix)
+    # print(w_mkt)
+
+    # print(covar_matrix.shape)
+    # print(w_mkt.shape)
+    # implied_expected_returns = calc_implied_expected_returns(lamb_0, covar_matrix, w_mkt)
+    # expected_returns = black_litterman(covar_matrix, np.cov(analyst_return_predictions), implied_expected_returns, analyst_return_predictions)
+    # variance = calc_sigma(w_mkt, covar_matrix)
+    # variance = np.matmul(np.matmul(w_mkt.T, covar_matrix),w_mkt)
 
 
     #We want to maximize sharpe wrt lambda and weights
-
-
-
     # res = scipy.optimize.minimize(sharpe, lamb_0, method='nelder-mead', options={'xatol': 1e-8, 'disp': True})
+    # This simple strategy equally weights all assets every period
+    # (called a 1/n strategy).
+    
+    # n_assets = len(asset_prices)
+    # weights = np.repeat(1 / n_assets, n_assets)
+
+    # #L1 normalize the weights before returning
+    # normalized_weights = weights/np.linalg.norm(weights, ord=1)
+    # return normalized_weights
+
     # This simple strategy equally weights all assets every period
     # (called a 1/n strategy).
     
     n_assets = len(asset_prices)
     weights = np.repeat(1 / n_assets, n_assets)
-
-    #L1 normalize the weights before returning
-    normalized_weights = weights/np.linalg.norm(weights, ord=1)
-    return normalized_weights
+    return weights
 
 
 #Testing the runtime of the allocate_portfolio
