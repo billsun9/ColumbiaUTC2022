@@ -14,7 +14,7 @@ analyst2 = pd.read_csv("Predicted Testing Data Analyst 2.csv")
 analyst3 = pd.read_csv("Predicted Testing Data Analyst 3.csv")
 shares = pd.read_csv("Shares Outstanding.csv")
 shares = shares.iloc[:, 1:]
-
+# %%
 #Figure out how to do test train splits w/o scipy
 
 def calc_implied_expected_returns(lamb, var_covar_matrix, w_mkt):

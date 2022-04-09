@@ -13,8 +13,8 @@ import xgboost
 
 DATA_PATH = 'Case 1 Training Data/'
 # %%
-prices = pd.read_csv(DATA_PATH+'prices_2016.csv')
-rain = pd.read_csv(DATA_PATH+'rain_2016.csv')
+prices = pd.read_csv(DATA_PATH+'prices_2018.csv')
+rain = pd.read_csv(DATA_PATH+'rain_2018.csv')
 
 # %%
 # daily prices

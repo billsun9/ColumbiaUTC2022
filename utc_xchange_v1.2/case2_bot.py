@@ -117,7 +117,6 @@ class Case2ExampleBot(UTCBot):
         total_gamma = 0
         total_vega = 0
         total_theta = 0
-
         for strike in option_strikes:
             for flag in ["C", "P"]:
               #calculating greeks, but need to specify in flag if it is calculating for a call or a put option
@@ -125,8 +124,8 @@ class Case2ExampleBot(UTCBot):
               total_gamma += self.positions["UC" + str(strike) + flag] * abs(py_vollib.black.greeks.analytical.gamma(flag.lower(), self.underlying_price, strike, time_to_expiry, 0, vol))
               total_vega += self.positions["UC" + str(strike) + flag] * abs(py_vollib.black.greeks.analytical.vega(flag.lower(), self.underlying_price, strike, time_to_expiry, 0, vol))
               total_theta += self.positions["UC" + str(strike) + flag] * abs(py_vollib.black.greeks.analytical.theta(flag.lower(), self.underlying_price, strike, time_to_expiry, 0, vol))
-        print(total_delta)
-        if ((total_delta > (DELTA_LIMIT -1200)) or (total_gamma > (GAMMA_LIMIT -500))) or ((total_vega > (VEGA_LIMIT -100000)) or (total_theta > (THETA_LIMIT -50000))):
+        print("delta: " + str(total_delta))
+        if ((total_delta > 35) or (total_gamma > (GAMMA_LIMIT -500))) or ((total_vega > (VEGA_LIMIT -100000)) or (total_theta > (THETA_LIMIT -50000))):
           print("self-liquidating to lower risk limits!")
           for strike in option_strikes:
             for flag in ["C", "P"]:
@@ -145,7 +144,7 @@ class Case2ExampleBot(UTCBot):
                     )
                 )
 
-        else:
+        elif (self.current_day * 100) % 20 ==  0:
           if self.current_day == 0:
             for strike in option_strikes:
               for flag in ["C", "P"]:
