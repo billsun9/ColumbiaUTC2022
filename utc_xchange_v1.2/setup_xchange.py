@@ -68,9 +68,11 @@ class XChangeEnvBuilder(venv.EnvBuilder):
         cmd.extend(
             [
                 "betterproto",  # Interface with protobufs
+                "numba",
                 "numpy",  # Libraries for numerical computing / data manipulation
                 "pandas",  # Greek
                 "scipy",
+                "py_vollib",
                 "pyyaml",  # Only necessary for casewriters, but conditional compilation is hard
             ]
         )
